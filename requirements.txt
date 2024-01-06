@@ -1,0 +1,6 @@
+Django==5.0
+django-filter==23.5
+djangorestframework==3.14.0
+load-dotenv==0.1.0
+python-dotenv==1.0.0
+
