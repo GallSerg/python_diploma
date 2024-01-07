@@ -3,6 +3,9 @@ from django.contrib.auth.models import AbstractUser
 from django.db import models
 
 
+ORDER_STATUS = ('New', 'In progress', 'Delivery', 'Completed')
+
+
 class UserManager(BaseUserManager):
     use_in_migrations = True
 
@@ -136,3 +139,22 @@ class ProductParameter(models.Model):
     product_info = models.ForeignKey(ProductInfo, related_name='product_info', on_delete=models.CASCADE)
     parameter = models.ForeignKey(Parameter, related_name='parameters', on_delete=models.CASCADE)
     value = models.CharField(max_length=100)
+
+
+class Order(models.Model):
+    user = models.ForeignKey(User, related_name='orders', on_delete=models.CASCADE)
+    dt = models.DateTimeField(auto_now_add=True)
+    status = models.CharField(choices=ORDER_STATUS)
+
+
+class OrderItem(models.Model):
+    order = models.ForeignKey(Order, related_name='orders', on_delete=models.CASCADE)
+    product = models.ForeignKey(Product, related_name='products', on_delete=models.CASCADE)
+    shop = models.ForeignKey(Shop, related_name='shops', on_delete=models.CASCADE)
+    quantity = models.PositiveIntegerField()
+
+
+class Contact(models.Model):
+    user = models.ForeignKey(User, related_name='orders', on_delete=models.CASCADE)
+    value = models.CharField(max_length=100)
+    type = models.CharField(max_length=100)
