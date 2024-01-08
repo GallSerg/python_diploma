@@ -3,7 +3,13 @@ from django.contrib.auth.models import AbstractUser
 from django.db import models
 
 
-ORDER_STATUS = ('New', 'In progress', 'Delivery', 'Completed')
+ORDER_STATUS = (
+    ("1", "New"),
+    ("2", "In progress"),
+    ("3", "Delivery"),
+    ("4", "Completed"),
+    ("5", "Rejected"),
+)
 
 
 class UserManager(BaseUserManager):
