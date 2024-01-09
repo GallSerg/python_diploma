@@ -81,13 +81,13 @@ class Category(models.Model):
 
 
 class ShopCategory(models.Model):
-    shop = models.ForeignKey(Shop, related_name='shops', on_delete=models.CASCADE)
-    category = models.ForeignKey(Category, related_name='categories', on_delete=models.CASCADE)
+    shop = models.ForeignKey(Shop, related_name='shop_category', on_delete=models.CASCADE)
+    category = models.ForeignKey(Category, related_name='shop_category', on_delete=models.CASCADE)
 
 
 class Product(models.Model):
     name = models.CharField(max_length=100)
-    category = models.ForeignKey(Category, related_name='products', on_delete=models.CASCADE)
+    category = models.ForeignKey(Category, related_name='product', on_delete=models.CASCADE)
 
     class Meta:
         verbose_name = 'Product'
@@ -98,8 +98,8 @@ class Product(models.Model):
 
 class ProductInfo(models.Model):
     name = models.CharField(max_length=100)
-    product = models.ForeignKey(Category, related_name='product', on_delete=models.CASCADE)
-    shop = models.ForeignKey(Category, related_name='shop', on_delete=models.CASCADE)
+    product = models.ForeignKey(Product, related_name='product_info', on_delete=models.CASCADE)
+    shop = models.ForeignKey(Shop, related_name='product_info', on_delete=models.CASCADE)
     quantity = models.IntegerField()
     price = models.PositiveIntegerField()
     price_rrc = models.PositiveIntegerField()
@@ -122,25 +122,25 @@ class Parameter(models.Model):
 
 
 class ProductParameter(models.Model):
-    product_info = models.ForeignKey(ProductInfo, related_name='product_info', on_delete=models.CASCADE)
-    parameter = models.ForeignKey(Parameter, related_name='parameters', on_delete=models.CASCADE)
+    product_info = models.ForeignKey(ProductInfo, related_name='product_parameter', on_delete=models.CASCADE)
+    parameter = models.ForeignKey(Parameter, related_name='product_parameter', on_delete=models.CASCADE)
     value = models.CharField(max_length=100)
 
 
 class Order(models.Model):
-    user = models.ForeignKey(User, related_name='orders', on_delete=models.CASCADE)
+    user = models.ForeignKey(User, related_name='order', on_delete=models.CASCADE)
     dt = models.DateTimeField(auto_now_add=True)
     status = models.CharField(choices=ORDER_STATUS)
 
 
 class OrderItem(models.Model):
-    order = models.ForeignKey(Order, related_name='orders', on_delete=models.CASCADE)
-    product = models.ForeignKey(Product, related_name='products', on_delete=models.CASCADE)
-    shop = models.ForeignKey(Shop, related_name='shops', on_delete=models.CASCADE)
+    order = models.ForeignKey(Order, related_name='order_item', on_delete=models.CASCADE)
+    product = models.ForeignKey(Product, related_name='order_item', on_delete=models.CASCADE)
+    shop = models.ForeignKey(Shop, related_name='order_item', on_delete=models.CASCADE)
     quantity = models.PositiveIntegerField()
 
 
 class Contact(models.Model):
-    user = models.ForeignKey(User, related_name='orders', on_delete=models.CASCADE)
+    user = models.ForeignKey(User, related_name='contact', on_delete=models.CASCADE)
     value = models.CharField(max_length=100)
     type = models.CharField(max_length=100)
