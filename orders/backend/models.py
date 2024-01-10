@@ -1,3 +1,5 @@
+import secrets
+
 from django.contrib.auth.base_user import BaseUserManager
 from django.contrib.auth.models import AbstractUser
 from django.db import models
@@ -144,3 +146,17 @@ class Contact(models.Model):
     user = models.ForeignKey(User, related_name='contact', on_delete=models.CASCADE)
     value = models.CharField(max_length=100)
     type = models.CharField(max_length=100)
+
+
+class ConfirmToken(models.Model):
+    object = models.manager.Manager()
+    key = models.CharField(max_length=16)
+
+    @staticmethod
+    def generate_verification_token():
+        return secrets.token_hex(16)
+
+    def save(self, *args, **kwargs):
+        if not self.key:
+            self.key = self.generate_verification_token()
+        return self.save()
