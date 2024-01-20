@@ -2,6 +2,7 @@ import secrets
 
 from django.contrib.auth.base_user import BaseUserManager
 from django.contrib.auth.models import AbstractUser
+from django.contrib.auth.validators import UnicodeUsernameValidator
 from django.db import models
 
 
@@ -52,6 +53,8 @@ class User(AbstractUser):
     email = models.EmailField(unique=True)
     company = models.CharField(max_length=100)
     position = models.CharField(max_length=100)
+    username_validator = UnicodeUsernameValidator()
+    username = models.CharField(max_length=200, validators=[username_validator])
 
     def __str__(self):
         return f'{self.first_name} {self.last_name}'
@@ -149,7 +152,7 @@ class Contact(models.Model):
 
 
 class ConfirmToken(models.Model):
-    object = models.manager.Manager()
+    objects = models.manager.Manager()
     key = models.CharField(max_length=16)
 
     @staticmethod

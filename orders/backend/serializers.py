@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from models import (User, Shop, ShopCategory, Order, OrderItem, Category, Contact,
+from .models import (User, Shop, ShopCategory, Order, OrderItem, Category, Contact,
                     ConfirmToken, Product, ProductInfo, ProductParameter, Parameter)
 
 
