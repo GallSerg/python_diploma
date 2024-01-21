@@ -64,6 +64,7 @@ class User(AbstractUser):
 
 
 class Shop(models.Model):
+    objects = models.manager.Manager()
     name = models.CharField(max_length=100)
     url = models.URLField(max_length=400, null=True)
 
@@ -75,6 +76,7 @@ class Shop(models.Model):
 
 
 class Category(models.Model):
+    objects = models.manager.Manager()
     name = models.CharField(max_length=100)
     shops = models.ManyToManyField(Shop, related_name='categories', through='ShopCategory')
 
@@ -91,6 +93,7 @@ class ShopCategory(models.Model):
 
 
 class Product(models.Model):
+    objects = models.manager.Manager()
     name = models.CharField(max_length=100)
     category = models.ForeignKey(Category, related_name='product', on_delete=models.CASCADE)
 
@@ -102,6 +105,7 @@ class Product(models.Model):
 
 
 class ProductInfo(models.Model):
+    objects = models.manager.Manager()
     name = models.CharField(max_length=100)
     product = models.ForeignKey(Product, related_name='product_info', on_delete=models.CASCADE)
     shop = models.ForeignKey(Shop, related_name='product_info', on_delete=models.CASCADE)
@@ -117,6 +121,7 @@ class ProductInfo(models.Model):
 
 
 class Parameter(models.Model):
+    objects = models.manager.Manager()
     name = models.CharField(max_length=100)
 
     class Meta:
@@ -127,6 +132,7 @@ class Parameter(models.Model):
 
 
 class ProductParameter(models.Model):
+    objects = models.manager.Manager()
     product_info = models.ForeignKey(ProductInfo, related_name='product_parameter', on_delete=models.CASCADE)
     parameter = models.ForeignKey(Parameter, related_name='product_parameter', on_delete=models.CASCADE)
     value = models.CharField(max_length=100)

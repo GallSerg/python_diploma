@@ -1,4 +1,3 @@
-from django.shortcuts import render
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from yaml import load as load_yaml, Loader
@@ -6,8 +5,8 @@ from requests import get
 from .models import (User, Shop, ShopCategory, Order, OrderItem, Category, Contact,
                      ConfirmToken, Product, ProductInfo, ProductParameter, Parameter)
 from .serializers import (UserSerializer, ShopSerializer, OrderSerializer, OrderItemSerializer, CategorySerializer,
-                         ContactSerializer, ProductSerializer, ProductInfoSerializer, ProductParameterSerializer,
-                         ParameterSerializer)
+                          ContactSerializer, ProductSerializer, ProductInfoSerializer, ProductParameterSerializer,
+                          ParameterSerializer)
 from .signals import new_user_registered, new_order
 
 
