@@ -8,12 +8,13 @@ from .serializers import (UserSerializer, ShopSerializer, OrderSerializer, Order
                           ContactSerializer, ProductSerializer, ProductInfoSerializer, ProductParameterSerializer,
                           ParameterSerializer)
 from .signals import new_user_registered, new_order
+from django.contrib.auth import authenticate
+from rest_framework.authtoken.models import Token
 
 
 class UserRegister(APIView):
     def post(self, request, *args, **kwargs):
 
-        # проверяем обязательные аргументы
         if {'first_name', 'last_name', 'email', 'password', 'company', 'position'}.issubset(request.data):
             request.data._mutable = True
             request.data.update({})
@@ -41,9 +42,26 @@ class EmailConfirm(APIView):
                 token.delete()
                 return Response({'Status': True})
             else:
-                return Response({'Status': False, 'Errors': 'Token error'})
+                return Response({'Status': False, 'Errors': 'Token is incorrect'})
 
         return Response({'Status': False, 'Errors': 'Not confirmed'})
+
+
+class UserLogin(APIView):
+
+    def post(self, request, *args, **kwargs):
+        if {'username', 'password'}.issubset(request.data):
+            user = authenticate(request, username=request.data['username'], password=request.data['password'])
+
+            if user is not None:
+                if user.is_active:
+                    token, i = Token.objects.get_or_create(user=user)
+
+                    return Response({'Status': True, 'Token': token.key})
+
+            return Response({'Status': False, 'Errors': 'Can not authorise'})
+
+        return Response({'Status': False, 'Errors': 'Bad request'})
 
 
 class ProviderUpdate(APIView):
