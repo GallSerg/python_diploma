@@ -159,7 +159,8 @@ class Contact(models.Model):
 
 class ConfirmToken(models.Model):
     objects = models.manager.Manager()
-    key = models.CharField(max_length=16)
+    key = models.CharField(max_length=35)
+    user = models.ForeignKey(User, default=15, related_name='confirm_token', on_delete=models.CASCADE)
 
     @staticmethod
     def generate_verification_token():
@@ -168,4 +169,5 @@ class ConfirmToken(models.Model):
     def save(self, *args, **kwargs):
         if not self.key:
             self.key = self.generate_verification_token()
-        return self.save()
+        return super(ConfirmToken, self).save(*args, **kwargs)
+
