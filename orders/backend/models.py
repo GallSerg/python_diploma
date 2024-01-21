@@ -155,6 +155,18 @@ class Contact(models.Model):
     user = models.ForeignKey(User, related_name='contact', on_delete=models.CASCADE)
     value = models.CharField(max_length=100)
     type = models.CharField(max_length=100)
+    phone = models.CharField(max_length=12, blank=True)
+
+
+class Address(models.Model):
+    objects = models.manager.Manager()
+    contact = models.ForeignKey(Contact, related_name='address', on_delete=models.CASCADE)
+    city = models.CharField(max_length=50)
+    street = models.CharField(max_length=100)
+    house = models.CharField(max_length=15)
+    structure = models.CharField(max_length=15)
+    building = models.CharField(max_length=15)
+    apartment = models.CharField(max_length=15)
 
 
 class ConfirmToken(models.Model):
