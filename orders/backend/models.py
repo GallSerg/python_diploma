@@ -152,15 +152,16 @@ class OrderItem(models.Model):
 
 
 class Contact(models.Model):
+    objects = models.manager.Manager()
     user = models.ForeignKey(User, related_name='contact', on_delete=models.CASCADE)
-    value = models.CharField(max_length=100)
-    type = models.CharField(max_length=100)
+    value = models.CharField(max_length=100, blank=True)
+    type = models.CharField(max_length=100, blank=True)
     phone = models.CharField(max_length=12, blank=True)
 
 
 class Address(models.Model):
     objects = models.manager.Manager()
-    contact = models.ForeignKey(Contact, related_name='address', on_delete=models.CASCADE)
+    contact = models.ForeignKey(Contact, related_name='address', blank=True, on_delete=models.CASCADE)
     city = models.CharField(max_length=50)
     street = models.CharField(max_length=100)
     house = models.CharField(max_length=15)
@@ -182,4 +183,3 @@ class ConfirmToken(models.Model):
         if not self.key:
             self.key = self.generate_verification_token()
         return super(ConfirmToken, self).save(*args, **kwargs)
-

@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from .models import (User, Shop, ShopCategory, Order, OrderItem, Category, Contact,
-                    ConfirmToken, Product, ProductInfo, ProductParameter, Parameter)
+                     ConfirmToken, Address, Product, ProductInfo, ProductParameter, Parameter)
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -58,7 +58,16 @@ class OrderItemSerializer(serializers.ModelSerializer):
         fields = ('id', 'order', 'product', 'shop', 'quantity',)
 
 
+class AddressSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Address
+        fields = ('id', 'city', 'street', 'house', 'structure', 'building', 'apartment', 'contact')
+
+
 class ContactSerializer(serializers.ModelSerializer):
+    address = AddressSerializer(read_only=True, many=True)
+
     class Meta:
         model = Contact
-        fields = ('id', 'user', 'value', 'type')
+        fields = ('id', 'user', 'phone', 'address')
+        read_only_fields = ('address',)
