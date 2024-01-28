@@ -158,7 +158,7 @@ class ContactView(APIView):
         return Response({'Status': False, 'Comment': 'Error', 'Errors': 'Id is not found in request'}, status=400)
 
 
-class ContactDetails(APIView):
+class UserDetails(APIView):
 
     def get(self, request: Request, *args, **kwargs):
         if not request.user.is_authenticated:
@@ -172,17 +172,10 @@ class ContactDetails(APIView):
             return Response({'Status': False, 'Comment': 'Error', 'Error': 'Not authenticated'}, status=401)
         else:
             request.user.set_password(request.data['password'])
-        r_d = request.data
-        user_serializer = UserSerializer(request.user, data=r_d, partial=True)
-        print(r_d)
-        address_serializer = AddressSerializer(request.user, data=r_d, partial=True)
+        user_serializer = UserSerializer(request.user, data=request.data, partial=True)
         if user_serializer.is_valid():
             user_serializer.save()
-            if address_serializer.is_valid():
-                address_serializer.save()
-                return Response({'Status': True, 'Comment': 'Created'}, status=201)
-            else:
-                return Response({'Status': False, 'Comment': 'Error', 'Errors': address_serializer.errors}, status=400)
+            return Response({'Status': True, 'Comment': 'Edited'}, status=200)
         else:
             return Response({'Status': False, 'Comment': 'Error', 'Errors': user_serializer.errors}, status=400)
 
