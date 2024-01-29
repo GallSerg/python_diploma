@@ -154,6 +154,7 @@ class ProductParameter(models.Model):
 
 
 class Order(models.Model):
+    objects = models.manager.Manager()
     user = models.ForeignKey(User, related_name='order', on_delete=models.CASCADE)
     dt = models.DateTimeField(auto_now_add=True)
     status = models.CharField(choices=ORDER_STATUS)

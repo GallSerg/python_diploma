@@ -230,7 +230,7 @@ class PartnerState(APIView):
 
     def get(self, request, *args, **kwargs):
         if not request.user.is_authenticated:
-            return Response({'Status': False, 'Comment': 'Error', 'Error': 'Log in required'}, status=401)
+            return Response({'Status': False, 'Comment': 'Error', 'Error': 'Not authenticated'}, status=401)
         if request.user.type != 'partner':
             return Response({'Status': False, 'Comment': 'Error',
                              'Error': 'Function is available only for partners'}, status=403)
@@ -240,9 +240,10 @@ class PartnerState(APIView):
 
     def post(self, request, *args, **kwargs):
         if not request.user.is_authenticated:
-            return Response({'Status': False, 'Comment': 'Error', 'Error': 'Log in required'}, status=401)
+            return Response({'Status': False, 'Comment': 'Error', 'Error': 'Not authenticated'}, status=401)
         if request.user.type != 'partner':
-            return Response({'Status': False, 'Comment': 'Error', 'Error': 'Function is available only for partners'}, status=403)
+            return Response({'Status': False, 'Comment': 'Error',
+                             'Error': 'Function is available only for partners'}, status=403)
         state = request.data.get('state')
         if state:
             if state in ['on', 'off']:
@@ -252,3 +253,15 @@ class PartnerState(APIView):
             else:
                 return Response({'Status': False, 'Errors': 'State field is incorrect'}, status=400)
         return Response({'Status': False, 'Errors': 'Bad request'}, status=400)
+
+
+class PartnerOrders(APIView):
+    def get(self, request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return Response({'Status': False, 'Comment': 'Error', 'Error': 'Not authenticated'}, status=401)
+        if request.user.type != 'partner':
+            return Response({'Status': False, 'Comment': 'Error',
+                             'Error': 'Function is available only for partners'}, status=403)
+        order = Order.objects.filter(user_id=request.user.id)
+        serializer = OrderSerializer(order, many=True)
+        return Response(serializer.data)
