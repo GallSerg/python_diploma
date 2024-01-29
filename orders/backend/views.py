@@ -18,7 +18,7 @@ from rest_framework.authtoken.models import Token
 class UserRegister(APIView):
     def post(self, request, *args, **kwargs):
 
-        if {'first_name', 'last_name', 'email', 'password', 'company', 'position'}.issubset(request.data):
+        if {'first_name', 'last_name', 'email', 'password', 'company', 'position', }.issubset(request.data):
             request.data._mutable = True
             request.data.update({})
             user_serializer = UserSerializer(data=request.data)
@@ -190,37 +190,39 @@ class ShopView(ListAPIView):
     serializer_class = ShopSerializer
 
 
-class ProviderUpdate(APIView):
+class PartnerUpdate(APIView):
     def post(self, request, *args, **kwargs):
         if not request.user.is_authenticated:
             return Response({'Status': False, 'Comment': 'Error', 'Error': 'Not authenticated'}, status=401)
+        user_type = User.objects.filter(id=request.user.id).values('type')
+        if user_type[0]['type'] != 'partner':
+            return Response({'Status': False, 'Comment': 'Error',
+                             'Error': 'Function is available only for partners'}, status=403)
         url = request.data.get('url')
         if url:
             stream = get(url).content
             data = load_yaml(stream, Loader=Loader)
-
-            shop, _ = Shop.objects.get_or_create(name=data['shop'], user_id=request.user.id)
+            shop, i = Shop.objects.get_or_create(name=data['shop'], user_id=request.user.id)
             for category in data['categories']:
-                category_object, _ = Category.objects.get_or_create(id=category['id'], name=category['name'])
+                category_object, i = Category.objects.get_or_create(id=category['id'], name=category['name'])
                 category_object.shops.add(shop.id)
                 category_object.save()
             ProductInfo.objects.filter(shop_id=shop.id).delete()
             for item in data['goods']:
-                product, _ = Product.objects.get_or_create(name=item['name'], category_id=item['category'])
+                product, i = Product.objects.get_or_create(name=item['name'], category_id=item['category'])
 
                 product_info = ProductInfo.objects.create(product_id=product.id,
                                                           external_id=item['id'],
-                                                          model=item['model'],
+                                                          name=item['model'],
                                                           price=item['price'],
                                                           price_rrc=item['price_rrc'],
                                                           quantity=item['quantity'],
                                                           shop_id=shop.id)
                 for name, value in item['parameters'].items():
-                    parameter_object, _ = Parameter.objects.get_or_create(name=name)
+                    parameter_object, i = Parameter.objects.get_or_create(name=name)
                     ProductParameter.objects.create(product_info_id=product_info.id,
                                                     parameter_id=parameter_object.id,
                                                     value=value)
 
-            return Response({'Status': True, 'Comment': 'Provider is updated'})
-
+            return Response({'Status': True, 'Comment': 'Partner is updated'})
         return Response({'Status': False, 'Comment': 'Error', 'Errors': 'Bad request'}, status=400)

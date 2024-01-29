@@ -14,6 +14,11 @@ ORDER_STATUS = (
     ("5", "Rejected"),
 )
 
+USER_TYPE = (
+    ("customer", "customer"),
+    ("partner", "partner"),
+)
+
 
 class UserManager(BaseUserManager):
     use_in_migrations = True
@@ -54,7 +59,14 @@ class User(AbstractUser):
     company = models.CharField(max_length=100)
     position = models.CharField(max_length=100)
     username_validator = UnicodeUsernameValidator()
-    username = models.CharField(max_length=200, validators=[username_validator])
+    username = models.CharField(
+        max_length=200,
+        validators=[username_validator],
+        error_messages={
+            'unique': "A user with that username already exists.",
+        },
+    )
+    type = models.CharField(choices=USER_TYPE, max_length=8, default='customer')
 
     def __str__(self):
         return f'{self.first_name} {self.last_name}'
@@ -67,6 +79,7 @@ class Shop(models.Model):
     objects = models.manager.Manager()
     name = models.CharField(max_length=100)
     url = models.URLField(max_length=400, null=True)
+    user = models.ForeignKey(User, default=15, related_name='shop', on_delete=models.CASCADE)
 
     class Meta:
         verbose_name = 'Shop'
@@ -109,7 +122,8 @@ class ProductInfo(models.Model):
     name = models.CharField(max_length=100)
     product = models.ForeignKey(Product, related_name='product_info', on_delete=models.CASCADE)
     shop = models.ForeignKey(Shop, related_name='product_info', on_delete=models.CASCADE)
-    quantity = models.IntegerField()
+    external_id = models.PositiveIntegerField(default=0)
+    quantity = models.PositiveIntegerField()
     price = models.PositiveIntegerField()
     price_rrc = models.PositiveIntegerField()
 
