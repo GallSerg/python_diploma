@@ -72,8 +72,7 @@ class ContactView(APIView):
     def get(self, request, *args, **kwargs):
         if not request.user.is_authenticated:
             return Response({'Status': False, 'Comment': 'Error', 'Error': 'Not authenticated'}, status=401)
-        contact = Contact.objects.filter(
-            user_id=request.user.id)
+        contact = Contact.objects.filter(user_id=request.user.id)
         serializer = ContactSerializer(contact, many=True)
         return Response(serializer.data)
 
@@ -163,7 +162,6 @@ class UserDetails(APIView):
     def get(self, request: Request, *args, **kwargs):
         if not request.user.is_authenticated:
             return Response({'Status': False, 'Comment': 'Error', 'Error': 'Not authenticated'}, status=401)
-
         serializer = UserSerializer(request.user)
         return Response(serializer.data)
 
@@ -202,7 +200,7 @@ class PartnerUpdate(APIView):
         if url:
             stream = get(url).content
             data = load_yaml(stream, Loader=Loader)
-            shop, i = Shop.objects.get_or_create(name=data['shop'], user_id=request.user.id)
+            shop, i = Shop.objects.get_or_create(name=data['shop'], url=url, user_id=request.user.id)
             for category in data['categories']:
                 category_object, i = Category.objects.get_or_create(id=category['id'], name=category['name'])
                 category_object.shops.add(shop.id)
@@ -226,3 +224,31 @@ class PartnerUpdate(APIView):
 
             return Response({'Status': True, 'Comment': 'Partner is updated'})
         return Response({'Status': False, 'Comment': 'Error', 'Errors': 'Bad request'}, status=400)
+
+
+class PartnerState(APIView):
+
+    def get(self, request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return Response({'Status': False, 'Comment': 'Error', 'Error': 'Log in required'}, status=401)
+        if request.user.type != 'partner':
+            return Response({'Status': False, 'Comment': 'Error',
+                             'Error': 'Function is available only for partners'}, status=403)
+        shop = Shop.objects.filter(user_id=request.user.id)[0]
+        st = 'on' if shop.state else 'off'
+        return Response({'Name': shop.name, 'State': st}, status=200)
+
+    def post(self, request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return Response({'Status': False, 'Comment': 'Error', 'Error': 'Log in required'}, status=401)
+        if request.user.type != 'partner':
+            return Response({'Status': False, 'Comment': 'Error', 'Error': 'Function is available only for partners'}, status=403)
+        state = request.data.get('state')
+        if state:
+            if state in ['on', 'off']:
+                state = True if state == 'on' else False
+                Shop.objects.filter(user_id=request.user.id).update(state=state)
+                return Response({'Status': True, 'Comment': 'Partner\'s state updated'})
+            else:
+                return Response({'Status': False, 'Errors': 'State field is incorrect'}, status=400)
+        return Response({'Status': False, 'Errors': 'Bad request'}, status=400)

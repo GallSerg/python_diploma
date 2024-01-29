@@ -80,6 +80,7 @@ class Shop(models.Model):
     name = models.CharField(max_length=100)
     url = models.URLField(max_length=400, null=True)
     user = models.ForeignKey(User, default=15, related_name='shop', on_delete=models.CASCADE)
+    state = models.BooleanField(default=True)
 
     class Meta:
         verbose_name = 'Shop'

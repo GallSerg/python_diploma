@@ -1,7 +1,7 @@
 from django.urls import path
 from django_rest_passwordreset.views import reset_password_request_token, reset_password_confirm
 from .views import UserRegister, EmailConfirm, UserLogin, ContactView, UserDetails, CategoryView, ShopView, \
-    PartnerUpdate
+    PartnerUpdate, PartnerState
 
 app_name = 'backend'
 
@@ -16,4 +16,5 @@ urlpatterns = [
     path('categories', CategoryView.as_view(), name='categories'),
     path('shops', ShopView.as_view(), name='shops'),
     path('partner/update', PartnerUpdate.as_view(), name='partner-update'),
+    path('partner/state', PartnerState.as_view(), name='partner-state'),
 ]
