@@ -265,3 +265,28 @@ class PartnerOrders(APIView):
         order = Order.objects.filter(user_id=request.user.id)
         serializer = OrderSerializer(order, many=True)
         return Response(serializer.data)
+
+
+class OrderView(APIView):
+    def get(self, request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return Response({'Status': False, 'Comment': 'Error', 'Error': 'Not authenticated'}, status=401)
+        order = Order.objects.filter(user_id=request.user.id)
+        serializer = OrderSerializer(order, many=True)
+        return Response(serializer.data)
+
+    def post(self, request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return Response({'Status': False, 'Comment': 'Error', 'Error': 'Not authenticated'}, status=401)
+        if {'id', 'contact'}.issubset(request.data):
+            if request.data['id'].isdigit():
+                order = Order.objects.filter(user_id=request.user.id, id=request.data['id'])
+                if order:
+                    is_updated = Order.objects.filter(user_id=request.user.id, id=request.data['id']).update(
+                        contact_id=request.data['contact'], state='in progress')
+                    if is_updated:
+                        new_order.send(sender=self.__class__, user_id=request.user.id)
+                        return Response({'Status': True, 'Comment': 'Order in progress'})
+                else:
+                    Response({'Status': False, 'Comment': 'Error', 'Errors': 'Order not found'}, status=400)
+        return Response({'Status': False, 'Comment': 'Error', 'Errors': 'Bad request'}, status=400)
