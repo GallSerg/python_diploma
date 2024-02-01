@@ -1,3 +1,4 @@
+import json
 from django.db.models import Q
 from rest_framework.generics import ListAPIView
 from rest_framework.response import Response
@@ -27,7 +28,7 @@ class UserRegister(APIView):
                 user.set_password(request.data['password'])
                 user.save()
                 new_user_registered.send(sender=self.__class__, user_id=user.id)
-                return Response({'Status': True, 'Comment': f'User {user.email} created'}, status=201)
+                return Response({'Status': True, 'Comment': f'User {user.email} is created'}, status=201)
             else:
                 return Response({'Status': False, 'Comment': 'Error', 'Errors': user_serializer.errors}, status=400)
 
@@ -288,5 +289,109 @@ class OrderView(APIView):
                         new_order.send(sender=self.__class__, user_id=request.user.id)
                         return Response({'Status': True, 'Comment': 'Order in progress'})
                 else:
-                    Response({'Status': False, 'Comment': 'Error', 'Errors': 'Order not found'}, status=400)
+                    Response({'Status': False, 'Comment': 'Error', 'Errors': 'Order is not found'}, status=400)
         return Response({'Status': False, 'Comment': 'Error', 'Errors': 'Bad request'}, status=400)
+
+
+class BasketView(APIView):
+    def get(self, request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return Response({'Status': False, 'Comment': 'Error', 'Error': 'Not authenticated'}, status=401)
+        basket = Order.objects.filter(user_id=request.user.id, state='new')
+        serializer = OrderSerializer(basket, many=True)
+        if serializer:
+            return Response(serializer.data, status=200)
+        return Response({'Status': False, 'Comment': 'Error', 'Error': 'Bad request'}, status=401)
+
+    def post(self, request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return Response({'Status': False, 'Comment': 'Error', 'Error': 'Not authenticated'}, status=401)
+        items_sting = request.data.get('items')
+        if items_sting:
+            items_dict = json.loads(items_sting)
+            basket, i = Order.objects.get_or_create(user_id=request.user.id, state='new')
+            total_sum = 0
+            objects_created = 0
+            for order_item in items_dict:
+                order_item.update({'order': basket.id})
+                pi = ProductInfo.objects.filter(id=order_item["product_info"])[0]
+                total_sum += pi.price * order_item["quantity"]
+                serializer = OrderItemSerializer(data=order_item)
+                if serializer.is_valid():
+                    serializer.save()
+                    objects_created += 1
+                else:
+                    return Response({'Status': False, 'Comment': f'Error in item. {objects_created} objects created',
+                                     'Errors': serializer.errors}, status=400)
+            ts = Order.objects.filter(id=basket.id).update(total_sum=total_sum)
+            return Response({'Status': True, 'Comment': f'{objects_created} objects are created'}, status=201)
+        return Response({'Status': False, 'Comment': 'Error', 'Errors': 'Bad request'}, status=400)
+
+    def delete(self, request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return Response({'Status': False, 'Comment': 'Error', 'Error': 'Not authenticated'}, status=401)
+        items_sting = request.data.get('items')
+        if items_sting:
+            items_list = items_sting.split(',')
+            basket = Order.objects.filter(user_id=request.user.id, state='new')[0]
+            query = Q()
+            objects_deleted = False
+            for order_item_id in items_list:
+                if order_item_id.isdigit():
+                    query = query | Q(order_id=basket.id, id=int(order_item_id))
+                    objects_deleted = True
+            if objects_deleted:
+                deleted_count = OrderItem.objects.filter(query).delete()[0]
+                order_items = OrderItem.objects.filter(order=basket.id)
+                total_sum = 0
+                for pib in order_items:
+                    pi = ProductInfo.objects.filter(id=pib.product_info_id)[0]
+                    total_sum += pi.price * pib.quantity
+                ts = Order.objects.filter(id=basket.id).update(total_sum=total_sum)
+                return Response({'Status': True, 'Comment': f'{deleted_count} deleted'}, status=200)
+            else:
+                return Response({'Status': False, 'Comment': 'Error', 'Errors': 'Items are not found'}, status=400)
+        return Response({'Status': False, 'Comment': 'Error', 'Errors': 'Bad request'}, status=400)
+
+    def put(self, request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return Response({'Status': False, 'Comment': 'Error', 'Error': 'Not authenticated'}, status=401)
+        items_sting = request.data.get('items')
+        if items_sting:
+            items_dict = json.loads(items_sting)
+            basket = Order.objects.filter(user_id=request.user.id, state='new')[0]
+            if basket:
+                objects_updated = 0
+                for order_item in items_dict:
+                    if isinstance(order_item['id'], int) and isinstance(order_item['quantity'], int):
+                        objects_updated += OrderItem.objects.filter(order_id=basket.id, id=order_item['id']).update(
+                            quantity=order_item['quantity'])
+                    else:
+                        return Response({'Status': False, 'Comment': f'Error in item. {objects_updated} updated',
+                                         'Errors': f'Incorrect value in item {order_item}'}, status=400)
+                order_items = OrderItem.objects.filter(order=basket.id)
+                total_sum = 0
+                for pib in order_items:
+                    pi = ProductInfo.objects.filter(id=pib.product_info_id)[0]
+                    total_sum += pi.price * pib.quantity
+                ts = Order.objects.filter(id=basket.id).update(total_sum=total_sum)
+                return Response({'Status': True, 'Comment': f'{objects_updated} updated'}, status=200)
+            else:
+                Response({'Status': False, 'Comment': 'Error', 'Errors': 'Basket is not found'}, status=400)
+        return Response({'Status': False, 'Comment': 'Error', 'Errors': 'Bad request'}, status=400)
+
+
+class ProductInfoView(APIView):
+    def get(self, request: Request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return Response({'Status': False, 'Comment': 'Error', 'Error': 'Not authenticated'}, status=401)
+        query = Q(shop__state=True)
+        shop_id = request.query_params.get('shop_id')
+        category_id = request.query_params.get('category_id')
+        if shop_id:
+            query = query & Q(shop_id=shop_id)
+        if category_id:
+            query = query & Q(product__category_id=category_id)
+        queryset = ProductInfo.objects.filter(query)
+        serializer = ProductInfoSerializer(queryset, many=True)
+        return Response(serializer.data, status=200)

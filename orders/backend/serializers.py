@@ -46,16 +46,32 @@ class ProductParameterSerializer(serializers.ModelSerializer):
         fields = ('product_info', 'parameter', 'value',)
 
 
-class OrderSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Order
-        fields = ('id', 'user', 'dt', 'status',)
-
-
 class OrderItemSerializer(serializers.ModelSerializer):
     class Meta:
         model = OrderItem
-        fields = ('id', 'order', 'product', 'shop', 'quantity',)
+        fields = ('id', 'order', 'product_info', 'quantity',)
+
+
+class ProductInfoInOrderSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ProductInfo
+        fields = ('name', 'price', 'price_rrc',)
+
+
+class OrderItemsInOrderSerializer(serializers.ModelSerializer):
+    product_info = ProductInfoInOrderSerializer(read_only=True)
+
+    class Meta:
+        model = OrderItem
+        fields = ('quantity', 'product_info',)
+
+
+class OrderSerializer(serializers.ModelSerializer):
+    order_item = OrderItemsInOrderSerializer(read_only=True, many=True)
+
+    class Meta:
+        model = Order
+        fields = ('id', 'user', 'dt', 'state', 'total_sum', 'order_item')
 
 
 class AddressSerializer(serializers.ModelSerializer):

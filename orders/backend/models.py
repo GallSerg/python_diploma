@@ -6,12 +6,11 @@ from django.contrib.auth.validators import UnicodeUsernameValidator
 from django.db import models
 
 
-ORDER_STATUS = (
-    ("1", "New"),
-    ("2", "In progress"),
-    ("3", "Delivery"),
-    ("4", "Completed"),
-    ("5", "Rejected"),
+ORDER_STATE = (
+    ("new", "New"),
+    ("in_progress", "In_progress"),
+    ("completed", "Completed"),
+    ("rejected", "Rejected"),
 )
 
 USER_TYPE = (
@@ -157,13 +156,14 @@ class Order(models.Model):
     objects = models.manager.Manager()
     user = models.ForeignKey(User, related_name='order', on_delete=models.CASCADE)
     dt = models.DateTimeField(auto_now_add=True)
-    status = models.CharField(choices=ORDER_STATUS)
+    state = models.CharField(choices=ORDER_STATE)
+    total_sum = models.PositiveIntegerField(default=0, blank=True)
 
 
 class OrderItem(models.Model):
+    objects = models.manager.Manager()
     order = models.ForeignKey(Order, related_name='order_item', on_delete=models.CASCADE)
-    product = models.ForeignKey(Product, related_name='order_item', on_delete=models.CASCADE)
-    shop = models.ForeignKey(Shop, related_name='order_item', on_delete=models.CASCADE)
+    product_info = models.ForeignKey(ProductInfo, related_name='order_item', default=1, on_delete=models.CASCADE)
     quantity = models.PositiveIntegerField()
 
 
