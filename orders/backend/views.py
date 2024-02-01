@@ -283,8 +283,8 @@ class OrderView(APIView):
             if request.data['id'].isdigit():
                 order = Order.objects.filter(user_id=request.user.id, id=request.data['id'])
                 if order:
-                    is_updated = Order.objects.filter(user_id=request.user.id, id=request.data['id']).update(
-                        contact_id=request.data['contact'], state='in progress')
+                    is_updated = (Order.objects.filter(user_id=request.user.id, id=request.data['id'])
+                                  .update(state='in_progress'))
                     if is_updated:
                         new_order.send(sender=self.__class__, user_id=request.user.id)
                         return Response({'Status': True, 'Comment': 'Order in progress'})
