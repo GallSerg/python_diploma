@@ -1,5 +1,7 @@
 import json
 from django.db.models import Q
+from rest_framework.throttling import UserRateThrottle
+from drf_spectacular.utils import extend_schema, OpenApiExample, OpenApiParameter
 from rest_framework.generics import ListAPIView
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -17,6 +19,35 @@ from rest_framework.authtoken.models import Token
 
 
 class UserRegister(APIView):
+    """
+    Register User in the System
+    """
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(name='last_name', description='Mandatory last_name', required=True, type=str),
+            OpenApiParameter(
+                name='email',
+                location=OpenApiParameter.QUERY,
+                description='Mandatory field',
+                examples=[
+                    OpenApiExample(
+                        'Example 1',
+                        summary='short optional summary',
+                        description='longer description',
+                        value='Hello'
+                    ),
+                ],
+            ),
+        ],
+        examples=[
+            OpenApiExample(
+                'Example 2',
+                description='check description',
+                value='check',
+            ),
+        ],
+        responses={200: "OK"},
+    )
     def post(self, request, *args, **kwargs):
 
         if {'first_name', 'last_name', 'email', 'password', 'company', 'position', }.issubset(request.data):
@@ -69,6 +100,7 @@ class UserLogin(APIView):
 
 
 class ContactView(APIView):
+    throttle_classes = [UserRateThrottle]
 
     def get(self, request, *args, **kwargs):
         if not request.user.is_authenticated:
@@ -159,6 +191,7 @@ class ContactView(APIView):
 
 
 class UserDetails(APIView):
+    throttle_classes = [UserRateThrottle]
 
     def get(self, request: Request, *args, **kwargs):
         if not request.user.is_authenticated:
@@ -180,16 +213,20 @@ class UserDetails(APIView):
 
 
 class CategoryView(ListAPIView):
+    throttle_classes = [UserRateThrottle]
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
 
 
 class ShopView(ListAPIView):
+    throttle_classes = [UserRateThrottle]
     queryset = Shop.objects.all()
     serializer_class = ShopSerializer
 
 
 class PartnerUpdate(APIView):
+    throttle_classes = [UserRateThrottle]
+
     def post(self, request, *args, **kwargs):
         if not request.user.is_authenticated:
             return Response({'Status': False, 'Comment': 'Error', 'Error': 'Not authenticated'}, status=401)
@@ -228,6 +265,7 @@ class PartnerUpdate(APIView):
 
 
 class PartnerState(APIView):
+    throttle_classes = [UserRateThrottle]
 
     def get(self, request, *args, **kwargs):
         if not request.user.is_authenticated:
@@ -257,6 +295,8 @@ class PartnerState(APIView):
 
 
 class PartnerOrders(APIView):
+    throttle_classes = [UserRateThrottle]
+
     def get(self, request, *args, **kwargs):
         if not request.user.is_authenticated:
             return Response({'Status': False, 'Comment': 'Error', 'Error': 'Not authenticated'}, status=401)
@@ -269,6 +309,8 @@ class PartnerOrders(APIView):
 
 
 class OrderView(APIView):
+    throttle_classes = [UserRateThrottle]
+
     def get(self, request, *args, **kwargs):
         if not request.user.is_authenticated:
             return Response({'Status': False, 'Comment': 'Error', 'Error': 'Not authenticated'}, status=401)
@@ -294,6 +336,8 @@ class OrderView(APIView):
 
 
 class BasketView(APIView):
+    throttle_classes = [UserRateThrottle]
+
     def get(self, request, *args, **kwargs):
         if not request.user.is_authenticated:
             return Response({'Status': False, 'Comment': 'Error', 'Error': 'Not authenticated'}, status=401)
@@ -382,6 +426,8 @@ class BasketView(APIView):
 
 
 class ProductInfoView(APIView):
+    throttle_classes = [UserRateThrottle]
+
     def get(self, request: Request, *args, **kwargs):
         if not request.user.is_authenticated:
             return Response({'Status': False, 'Comment': 'Error', 'Error': 'Not authenticated'}, status=401)
