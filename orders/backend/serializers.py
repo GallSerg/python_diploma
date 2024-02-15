@@ -10,6 +10,23 @@ class UserSerializer(serializers.ModelSerializer):
         fields = ('id', 'first_name', 'last_name', 'email', 'company', 'position', 'type',)
 
 
+class ConfirmTokenSerializer(serializers.ModelSerializer):
+    email = serializers.EmailField(source='user.email')
+    token = serializers.CharField(source='key')
+
+    class Meta:
+        model = ConfirmToken
+        fields = ('email', 'token',)
+
+
+class UserLoginSerializer(serializers.ModelSerializer):
+    username = serializers.EmailField(source='email')
+
+    class Meta:
+        model = User
+        fields = ('username', 'password',)
+
+
 class ShopSerializer(serializers.ModelSerializer):
     class Meta:
         model = Shop

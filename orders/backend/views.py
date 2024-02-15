@@ -12,7 +12,7 @@ from .models import (User, Shop, ShopCategory, Order, OrderItem, Category, Conta
                      ConfirmToken, Product, ProductInfo, ProductParameter, Parameter)
 from .serializers import (UserSerializer, ShopSerializer, OrderSerializer, OrderItemSerializer, CategorySerializer,
                           ContactSerializer, ProductSerializer, ProductInfoSerializer, ProductParameterSerializer,
-                          ParameterSerializer, AddressSerializer)
+                          ParameterSerializer, AddressSerializer, ConfirmTokenSerializer, UserLoginSerializer)
 from .signals import new_user_registered, new_order
 from django.contrib.auth import authenticate
 from rest_framework.authtoken.models import Token
@@ -20,36 +20,25 @@ from rest_framework.authtoken.models import Token
 
 class UserRegister(APIView):
     """
-    Register User in the System
+    View to register User in the System
     """
     @extend_schema(
-        parameters=[
-            OpenApiParameter(name='last_name', description='Mandatory last_name', required=True, type=str),
-            OpenApiParameter(
-                name='email',
-                location=OpenApiParameter.QUERY,
-                description='Mandatory field',
-                examples=[
-                    OpenApiExample(
-                        'Example 1',
-                        summary='short optional summary',
-                        description='longer description',
-                        value='Hello'
-                    ),
-                ],
-            ),
-        ],
-        examples=[
-            OpenApiExample(
-                'Example 2',
-                description='check description',
-                value='check',
-            ),
-        ],
-        responses={200: "OK"},
+        request=UserSerializer,
+        responses={
+            201: {'example': {'Status': True, 'Comment': 'User created'}},
+            400: {'example': {'Status': False, 'Comment': 'Error', 'Error': 'Bad request'}},
+        }
     )
     def post(self, request, *args, **kwargs):
+        """
+        Process a POST request and create a new user.
 
+        Args:
+            request
+
+        Returns:
+            The response contains the status of the user register, comment and errors.
+        """
         if {'first_name', 'last_name', 'email', 'password', 'company', 'position', }.issubset(request.data):
             request.data._mutable = True
             request.data.update({})
@@ -67,7 +56,26 @@ class UserRegister(APIView):
 
 
 class EmailConfirm(APIView):
+    """
+    View to confirm user's token
+    """
+    @extend_schema(
+        request=ConfirmTokenSerializer,
+        responses={
+            200: {'example': {'Status': True, 'Comment': 'Token is correct'}},
+            400: {'example': {'Status': False, 'Comment': 'Error', 'Error': 'Token is incorrect'}},
+        }
+    )
     def post(self, request, *args, **kwargs):
+        """
+        Confirms user token (sent by email)
+
+        Args:
+            request
+
+        Returns:
+            The response contains the status of the user token confirmation, comment and errors.
+        """
         if {'email', 'token'}.issubset(request.data):
             token = ConfirmToken.objects.filter(user__email=request.data['email'],
                                                 key=request.data['token']).first()
@@ -75,16 +83,35 @@ class EmailConfirm(APIView):
                 token.user.is_active = True
                 token.user.save()
                 token.delete()
-                return Response({'Status': True})
+                return Response({'Status': True, 'Comment': 'Token is correct'}, status=200)
             else:
-                return Response({'Status': False, 'Errors': 'Token is incorrect'}, status=400)
+                return Response({'Status': False, 'Comment': 'Error', 'Errors': 'Token is incorrect'}, status=400)
 
-        return Response({'Status': False, 'Errors': 'Not confirmed'}, status=400)
+        return Response({'Status': False, 'Comment': 'Error', 'Errors': 'Not confirmed'}, status=400)
 
 
 class UserLogin(APIView):
+    """
+    View to sign in user into the system
+    """
 
+    @extend_schema(
+        request=UserLoginSerializer,
+        responses={
+            200: {'example': {'Status': True, 'Comment': 'Logged in correctly', 'Token': 'token value'}},
+            400: {'example': {'Status': False, 'Comment': 'Error', 'Error': 'Bad request'}},
+        }
+    )
     def post(self, request, *args, **kwargs):
+        """
+        Log in user by username and password
+
+        Args:
+            request
+
+        Returns:
+            The response contains the status of the user token confirmation, comment and errors.
+        """
         if {'username', 'password'}.issubset(request.data):
             user = authenticate(request, username=request.data['username'], password=request.data['password'])
 
@@ -100,16 +127,71 @@ class UserLogin(APIView):
 
 
 class ContactView(APIView):
+    """
+    View to work with the contact: create, read, update and delete
+    """
     throttle_classes = [UserRateThrottle]
 
+    @extend_schema(
+        responses={
+            200: {'example': {
+                "id": 1,
+                "user": 2,
+                "phone": "+79998887777",
+                "address": [
+                    {
+                        "id": 1,
+                        "city": "Perm",
+                        "street": "Belinskogo",
+                        "house": "31",
+                        "structure": "1",
+                        "building": "1",
+                        "apartment": "101",
+                        "contact": 1
+                    }
+                ],
+            }
+            },
+            400: {'example': {'Status': False, 'Comment': 'Error', 'Error': 'Contact not found'}},
+            401: {'example': {'Status': False, 'Comment': 'Error', 'Error': 'Not authenticated'}},
+        }
+    )
     def get(self, request, *args, **kwargs):
+        """
+        Get contacts and address by current user
+
+        Args:
+            request
+
+        Returns:
+            The response contains the contacts and addresses of the current user (search by token), comment and errors.
+        """
         if not request.user.is_authenticated:
             return Response({'Status': False, 'Comment': 'Error', 'Error': 'Not authenticated'}, status=401)
         contact = Contact.objects.filter(user_id=request.user.id)
-        serializer = ContactSerializer(contact, many=True)
-        return Response(serializer.data)
+        if contact:
+            serializer = ContactSerializer(contact, many=True)
+            return Response(serializer.data)
+        return Response({'Status': False, 'Comment': 'Error', 'Errors': 'Contact not found'}, status=400)
 
+    @extend_schema(
+        request=ContactSerializer,
+        responses={
+            201: {'example': {'Status': True, 'Comment': 'New contact with address created'}},
+            400: {'example': {'Status': False, 'Comment': 'Error', 'Error': 'Bad request'}},
+            401: {'example': {'Status': False, 'Comment': 'Error', 'Error': 'Not authenticated'}},
+        }
+    )
     def post(self, request, *args, **kwargs):
+        """
+        Create contact (if the system gets new phone number) and addresses to current user
+
+        Args:
+            request
+
+        Returns:
+            The response contains the contact creating information, comment and errors.
+        """
         if not request.user.is_authenticated:
             return Response({'Status': False, 'Comment': 'Error', 'Error': 'Not authenticated'}, status=401)
 
@@ -135,7 +217,25 @@ class ContactView(APIView):
                 return Response({'Status': False, 'Comment': 'Error', 'Errors': contact_serializer.errors}, status=400)
         return Response({'Status': False, 'Comment': 'Error', 'Errors': 'Bad request'}, status=400)
 
+    @extend_schema(
+        request=ContactSerializer,
+        responses={
+            200: {'example': {'Status': True, 'Comment': 'Deleted {count} contacts and {count} addresses'}},
+            400: {'example': {'Status': False, 'Comment': 'Error', 'Error': 'Bad request'}},
+            401: {'example': {'Status': False, 'Comment': 'Error', 'Error': 'Not authenticated'}},
+        }
+    )
     def delete(self, request, *args, **kwargs):
+        """
+        Delete current user's contacts by id in request
+
+        Args:
+            request
+
+        Returns:
+            The response contains the deleted contacts count and deleted addresses count of the current user
+            (search by token), comment and errors.
+        """
         if not request.user.is_authenticated:
             return Response({'Status': False, 'Comment': 'Error', 'Error': 'Not authenticated'}, status=401)
 
@@ -161,7 +261,24 @@ class ContactView(APIView):
                 return Response({'Status': False, 'Comment': 'Error', 'Errors': 'Contact ids not found'}, status=400)
         return Response({'Status': False, 'Comment': 'Error', 'Errors': 'Bad request'}, status=400)
 
+    @extend_schema(
+        request=ContactSerializer,
+        responses={
+            200: {'example': {'Status': True, 'Comment': 'Contact edited'}},
+            400: {'example': {'Status': False, 'Comment': 'Error', 'Error': 'Bad request'}},
+            401: {'example': {'Status': False, 'Comment': 'Error', 'Error': 'Not authenticated'}},
+        }
+    )
     def put(self, request, *args, **kwargs):
+        """
+        Update contact (search by phone) of the current user
+
+        Args:
+            request
+
+        Returns:
+            The response contains the contact edit information, comment and errors.
+        """
         if not request.user.is_authenticated:
             return Response({'Status': False, 'Comment': 'Error', 'Error': 'Not authenticated'}, status=401)
         if 'id' in request.data:
@@ -191,15 +308,51 @@ class ContactView(APIView):
 
 
 class UserDetails(APIView):
+    """
+    View to get and edit User
+    """
     throttle_classes = [UserRateThrottle]
 
+    @extend_schema(
+        request=UserSerializer,
+        responses={
+            200: {'example': {'Status': True, 'Comment': 'User created'}},
+            400: {'example': {'Status': False, 'Comment': 'Error', 'Error': 'Bad request'}},
+        }
+    )
     def get(self, request: Request, *args, **kwargs):
+        """
+        Get current user (by token)
+
+        Args:
+            request
+
+        Returns:
+            The response contains the user information, comment and errors.
+        """
         if not request.user.is_authenticated:
             return Response({'Status': False, 'Comment': 'Error', 'Error': 'Not authenticated'}, status=401)
         serializer = UserSerializer(request.user)
         return Response(serializer.data)
 
+    @extend_schema(
+        request=ContactSerializer,
+        responses={
+            200: {'example': {'Status': True, 'Comment': 'Edited'}},
+            400: {'example': {'Status': False, 'Comment': 'Error', 'Error': 'Serializer errors'}},
+            401: {'example': {'Status': False, 'Comment': 'Error', 'Error': 'Not authenticated'}},
+        }
+    )
     def post(self, request, *args, **kwargs):
+        """
+        Edits current user (by token)
+
+        Args:
+            request
+
+        Returns:
+            The response contains the user edit information, comment and errors.
+        """
         if not request.user.is_authenticated:
             return Response({'Status': False, 'Comment': 'Error', 'Error': 'Not authenticated'}, status=401)
         else:
@@ -213,21 +366,46 @@ class UserDetails(APIView):
 
 
 class CategoryView(ListAPIView):
+    """
+    View to get categories
+    """
     throttle_classes = [UserRateThrottle]
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
 
 
 class ShopView(ListAPIView):
+    """
+    View to get shops
+    """
     throttle_classes = [UserRateThrottle]
     queryset = Shop.objects.all()
     serializer_class = ShopSerializer
 
 
 class PartnerUpdate(APIView):
+    """
+    View to edit Partner's goods data
+    """
     throttle_classes = [UserRateThrottle]
 
+    @extend_schema(
+        responses={
+            200: {'example': {'Status': True, 'Comment': 'Partner updated'}},
+            400: {'example': {'Status': False, 'Comment': 'Error', 'Error': 'Bad request'}},
+            401: {'example': {'Status': False, 'Comment': 'Error', 'Error': 'Not authenticated'}},
+        }
+    )
     def post(self, request, *args, **kwargs):
+        """
+        Load data from yaml-file with partner data. Also check if the current user is a partner.
+
+        Args:
+            request
+
+        Returns:
+            The response contains the partner edit information, comment and errors.
+        """
         if not request.user.is_authenticated:
             return Response({'Status': False, 'Comment': 'Error', 'Error': 'Not authenticated'}, status=401)
         user_type = User.objects.filter(id=request.user.id).values('type')
@@ -260,14 +438,33 @@ class PartnerUpdate(APIView):
                                                     parameter_id=parameter_object.id,
                                                     value=value)
 
-            return Response({'Status': True, 'Comment': 'Partner is updated'})
+            return Response({'Status': True, 'Comment': 'Partner updated'})
         return Response({'Status': False, 'Comment': 'Error', 'Errors': 'Bad request'}, status=400)
 
 
 class PartnerState(APIView):
+    """
+    View to get and change partner's state
+    """
     throttle_classes = [UserRateThrottle]
 
+    @extend_schema(
+        responses={
+            201: {'example': {'Name': 'Shop name', 'State': 'Some state'}},
+            400: {'example': {'Status': False, 'Comment': 'Error', 'Error': 'Bad request'}},
+            401: {'example': {'Status': False, 'Comment': 'Error', 'Error': 'Not authenticated'}},
+        }
+    )
     def get(self, request, *args, **kwargs):
+        """
+        Get partner's state
+
+        Args:
+            request
+
+        Returns:
+            The response contains the partner's state, comment and errors.
+        """
         if not request.user.is_authenticated:
             return Response({'Status': False, 'Comment': 'Error', 'Error': 'Not authenticated'}, status=401)
         if request.user.type != 'partner':
@@ -277,7 +474,23 @@ class PartnerState(APIView):
         st = 'on' if shop.state else 'off'
         return Response({'Name': shop.name, 'State': st}, status=200)
 
+    @extend_schema(
+        responses={
+            200: {'example': {'Status': True, 'Comment': 'Partner\'s state updated'}},
+            400: {'example': {'Status': False, 'Comment': 'Error', 'Error': 'Bad request'}},
+            401: {'example': {'Status': False, 'Comment': 'Error', 'Error': 'Not authenticated'}},
+        }
+    )
     def post(self, request, *args, **kwargs):
+        """
+        Edit partner's state
+
+        Args:
+            request
+
+        Returns:
+            The response contains the partner's state edit information, comment and errors.
+        """
         if not request.user.is_authenticated:
             return Response({'Status': False, 'Comment': 'Error', 'Error': 'Not authenticated'}, status=401)
         if request.user.type != 'partner':
@@ -295,9 +508,29 @@ class PartnerState(APIView):
 
 
 class PartnerOrders(APIView):
+    """
+    View to get partner's orders
+    """
     throttle_classes = [UserRateThrottle]
 
+    @extend_schema(
+        request=OrderSerializer,
+        responses={
+            200: {'example': {'Status': True, 'Comment': 'Order serializer data'}},
+            400: {'example': {'Status': False, 'Comment': 'Error', 'Error': 'Bad request'}},
+            401: {'example': {'Status': False, 'Comment': 'Error', 'Error': 'Not authenticated'}},
+        }
+    )
     def get(self, request, *args, **kwargs):
+        """
+        Get orders of current partner (= current user)
+
+        Args:
+            request
+
+        Returns:
+            The response contains the orders' information, comment and errors.
+        """
         if not request.user.is_authenticated:
             return Response({'Status': False, 'Comment': 'Error', 'Error': 'Not authenticated'}, status=401)
         if request.user.type != 'partner':
@@ -309,16 +542,53 @@ class PartnerOrders(APIView):
 
 
 class OrderView(APIView):
+    """
+    View to get and edit order information
+    """
     throttle_classes = [UserRateThrottle]
 
+    @extend_schema(
+        request=OrderSerializer,
+        responses={
+            200: {'example': {'Status': True, 'Comment': 'Order serializer data'}},
+            400: {'example': {'Status': False, 'Comment': 'Error', 'Error': 'Bad request'}},
+            401: {'example': {'Status': False, 'Comment': 'Error', 'Error': 'Not authenticated'}},
+        }
+    )
     def get(self, request, *args, **kwargs):
+        """
+        Get order of current user
+
+        Args:
+            request
+
+        Returns:
+            The response contains the order information (including products), comment and errors.
+        """
         if not request.user.is_authenticated:
             return Response({'Status': False, 'Comment': 'Error', 'Error': 'Not authenticated'}, status=401)
         order = Order.objects.filter(user_id=request.user.id)
         serializer = OrderSerializer(order, many=True)
         return Response(serializer.data)
 
+    @extend_schema(
+        request=OrderSerializer,
+        responses={
+            200: {'example': {'Status': True, 'Comment': 'Order in progress'}},
+            400: {'example': {'Status': False, 'Comment': 'Error', 'Error': 'Bad request'}},
+            401: {'example': {'Status': False, 'Comment': 'Error', 'Error': 'Not authenticated'}},
+        }
+    )
     def post(self, request, *args, **kwargs):
+        """
+        Edit order's state of current user and send a notification
+
+        Args:
+            request
+
+        Returns:
+            The response contains the order's state update information, comment and errors.
+        """
         if not request.user.is_authenticated:
             return Response({'Status': False, 'Comment': 'Error', 'Error': 'Not authenticated'}, status=401)
         if {'id', 'contact'}.issubset(request.data):
@@ -336,9 +606,29 @@ class OrderView(APIView):
 
 
 class BasketView(APIView):
+    """
+    View to manage cart: create, read, update, delete
+    """
     throttle_classes = [UserRateThrottle]
 
+    @extend_schema(
+        request=OrderSerializer,
+        responses={
+            200: {'example': {'Status': True, 'Comment': 'Order serializer data'}},
+            400: {'example': {'Status': False, 'Comment': 'Error', 'Error': 'Bad request'}},
+            401: {'example': {'Status': False, 'Comment': 'Error', 'Error': 'Not authenticated'}},
+        }
+    )
     def get(self, request, *args, **kwargs):
+        """
+        Get cart (in state new) of current user
+
+        Args:
+            request
+
+        Returns:
+            The response contains the cart information, comment and errors.
+        """
         if not request.user.is_authenticated:
             return Response({'Status': False, 'Comment': 'Error', 'Error': 'Not authenticated'}, status=401)
         basket = Order.objects.filter(user_id=request.user.id, state='new')
@@ -347,7 +637,24 @@ class BasketView(APIView):
             return Response(serializer.data, status=200)
         return Response({'Status': False, 'Comment': 'Error', 'Error': 'Bad request'}, status=401)
 
+    @extend_schema(
+        request=OrderSerializer,
+        responses={
+            201: {'example': {'Status': True, 'Comment': 'Items created'}},
+            400: {'example': {'Status': False, 'Comment': 'Error', 'Error': 'Bad request'}},
+            401: {'example': {'Status': False, 'Comment': 'Error', 'Error': 'Not authenticated'}},
+        }
+    )
     def post(self, request, *args, **kwargs):
+        """
+        Create a new cart of current user or add items in existing cart (cart in state new)
+
+        Args:
+            request
+
+        Returns:
+            The response contains the cart edit information, comment and errors.
+        """
         if not request.user.is_authenticated:
             return Response({'Status': False, 'Comment': 'Error', 'Error': 'Not authenticated'}, status=401)
         items_sting = request.data.get('items')
@@ -371,7 +678,24 @@ class BasketView(APIView):
             return Response({'Status': True, 'Comment': f'{objects_created} objects are created'}, status=201)
         return Response({'Status': False, 'Comment': 'Error', 'Errors': 'Bad request'}, status=400)
 
+    @extend_schema(
+        request=ContactSerializer,
+        responses={
+            200: {'example': {'Status': True, 'Comment': 'Items deleted'}},
+            400: {'example': {'Status': False, 'Comment': 'Error', 'Error': 'Bad request'}},
+            401: {'example': {'Status': False, 'Comment': 'Error', 'Error': 'Not authenticated'}},
+        }
+    )
     def delete(self, request, *args, **kwargs):
+        """
+        Delete current user cart
+
+        Args:
+            request
+
+        Returns:
+            The response contains the cart deleting information, comment and errors.
+        """
         if not request.user.is_authenticated:
             return Response({'Status': False, 'Comment': 'Error', 'Error': 'Not authenticated'}, status=401)
         items_sting = request.data.get('items')
@@ -397,7 +721,24 @@ class BasketView(APIView):
                 return Response({'Status': False, 'Comment': 'Error', 'Errors': 'Items are not found'}, status=400)
         return Response({'Status': False, 'Comment': 'Error', 'Errors': 'Bad request'}, status=400)
 
+    @extend_schema(
+        request=ContactSerializer,
+        responses={
+            200: {'example': {'Status': True, 'Comment': 'Items edited'}},
+            400: {'example': {'Status': False, 'Comment': 'Error', 'Error': 'Bad request'}},
+            401: {'example': {'Status': False, 'Comment': 'Error', 'Error': 'Not authenticated'}},
+        }
+    )
     def put(self, request, *args, **kwargs):
+        """
+        Add items into the cart
+
+        Args:
+            request
+
+        Returns:
+            The response contains the cart updating information, comment and errors.
+        """
         if not request.user.is_authenticated:
             return Response({'Status': False, 'Comment': 'Error', 'Error': 'Not authenticated'}, status=401)
         items_sting = request.data.get('items')
@@ -426,9 +767,29 @@ class BasketView(APIView):
 
 
 class ProductInfoView(APIView):
+    """
+    View to get product info with filter parameters (shop and category)
+    """
     throttle_classes = [UserRateThrottle]
 
+    @extend_schema(
+        request=ProductInfoSerializer,
+        responses={
+            201: {'example': {'Status': True, 'Comment': 'Product info'}},
+            400: {'example': {'Status': False, 'Comment': 'Error', 'Error': 'Bad request'}},
+            401: {'example': {'Status': False, 'Comment': 'Error', 'Error': 'Not authenticated'}},
+        }
+    )
     def get(self, request: Request, *args, **kwargs):
+        """
+        Get information of product filtering by parameters (shop and category)
+
+        Args:
+            request
+
+        Returns:
+            The response contains the product information, comment and errors.
+        """
         if not request.user.is_authenticated:
             return Response({'Status': False, 'Comment': 'Error', 'Error': 'Not authenticated'}, status=401)
         query = Q(shop__state=True)
