@@ -3,9 +3,15 @@ from django_rest_passwordreset.views import reset_password_request_token, reset_
 from .views import UserRegister, EmailConfirm, UserLogin, ContactView, UserDetails, CategoryView, ShopView, \
     PartnerUpdate, PartnerState, PartnerOrders, BasketView, OrderView, ProductInfoView
 
+
+def trigger_error(request):
+    division_by_zero = 1 / 0
+
+
 app_name = 'backend'
 
 urlpatterns = [
+    path('sentry-debug/', trigger_error),
     path('user/register', UserRegister.as_view(), name='user-register'),
     path('user/register/confirm', EmailConfirm.as_view(), name='email-confirm'),
     path('user/login', UserLogin.as_view(), name='user-login'),
