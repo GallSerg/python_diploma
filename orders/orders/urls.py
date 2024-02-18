@@ -5,10 +5,11 @@ from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView, Spec
 
 urlpatterns = [
     path('jet/', include('jet.urls', namespace='jet')),  # Django JET URLS
-    path(r'jet/dashboard/', include('jet.dashboard.urls', namespace='jet-dashboard')),
+    path('jet/dashboard/', include('jet.dashboard.urls', namespace='jet-dashboard')),
     path('admin/', admin.site.urls),
     path('api/v1/', include('backend.urls', namespace='backend')),
     path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
     path('api/schema/swagger-ui/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
     path('api/schema/redoc/', SpectacularRedocView.as_view(url_name='schema'), name='redoc'),
+    path('auth/', include('social_django.urls', namespace='social')),
 ]

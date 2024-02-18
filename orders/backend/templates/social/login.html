@@ -1,0 +1,18 @@
+<!-- backend/templates/social/login.html -->
+
+{% block content %}
+    <h2>Login</h2>
+
+    <form method="post" action="">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit">Login</button>
+    </form>
+
+    <h2>Or login with social accounts:</h2>
+    <a href="{% url 'social:begin' 'google-oauth2' %}">Login with Google</a>
+    <a href="{% url 'social:begin' 'facebook' %}">Login with Facebook</a>
+    <a href="{% url 'social:begin' 'vk-oauth2' %}">Login with VK</a>
+    <!-- Add other social providers as needed -->
+
+{% endblock %}

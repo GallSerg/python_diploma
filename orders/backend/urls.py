@@ -1,7 +1,7 @@
 from django.urls import path
 from django_rest_passwordreset.views import reset_password_request_token, reset_password_confirm
 from .views import UserRegister, EmailConfirm, UserLogin, ContactView, UserDetails, CategoryView, ShopView, \
-    PartnerUpdate, PartnerState, PartnerOrders, BasketView, OrderView, ProductInfoView
+    PartnerUpdate, PartnerState, PartnerOrders, BasketView, OrderView, ProductInfoView, custom_login_view
 
 
 def trigger_error(request):
@@ -27,4 +27,5 @@ urlpatterns = [
     path('basket', BasketView.as_view(), name='basket'),
     path('order', OrderView.as_view(), name='order'),
     path('products', ProductInfoView.as_view(), name='shops'),
+    path('custom_login', custom_login_view, name='custom_login'),
 ]
