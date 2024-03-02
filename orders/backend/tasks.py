@@ -1,17 +1,34 @@
 from celery import shared_task
-from django.core.mail import EmailMultiAlternatives
 from django.conf import settings
-from .models import ConfirmToken
+from django.core.mail import EmailMultiAlternatives
 
 
 @shared_task
-def send_email_task(user_id):
-    token, created = ConfirmToken.objects.get_or_create(user_id=user_id)
-
+def send_email_task(user_id, token, email):
     msg = EmailMultiAlternatives(
-        subject=f"Password Reset Token for {token.user.email}",
-        body=token.key,
+        subject=f"Password Reset Token for {email}",
+        body=token,
         from_email=settings.EMAIL_HOST_USER,
-        to=[token.user.email]
+        to=[email]
     )
+    msg.send()
+
+
+@shared_task
+def password_reset_task(user, email, token):
+    msg = EmailMultiAlternatives(subject=f"Password Reset Token for {user}",
+                                 body=token,
+                                 from_email=settings.EMAIL_HOST_USER,
+                                 to=[email]
+                                 )
+    msg.send()
+
+
+@shared_task
+def new_order_task(email):
+    msg = EmailMultiAlternatives(subject=f"Order status update",
+                                 body='Order complete',
+                                 from_email=settings.EMAIL_HOST_USER,
+                                 to=[email]
+                                 )
     msg.send()

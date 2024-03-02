@@ -49,6 +49,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
 
+    'django_celery_results',
     'rest_framework',
     'rest_framework.authtoken',
     'django_rest_passwordreset',
@@ -211,3 +212,6 @@ SPECTACULAR_SETTINGS = {
 # Celery Configuration
 CELERY_BROKER_URL = 'redis://localhost:6379/0'
 CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'
+CELERY_CACHE_BACKEND = 'django-cache'
+CELERY_BROKER_CONNECTION_TIMEOUT = 10  # or a higher value
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'orders.settings')

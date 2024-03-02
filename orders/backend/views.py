@@ -50,14 +50,12 @@ class UserRegister(APIView):
             return self.social_authenticate(request, backend)
 
         if {'first_name', 'last_name', 'email', 'password', 'company', 'position', }.issubset(request.data):
-            request.data._mutable = True
-            request.data.update({})
             user_serializer = UserSerializer(data=request.data)
             if user_serializer.is_valid():
                 user = user_serializer.save()
                 user.set_password(request.data['password'])
                 user.save()
-                new_user_registered.send(sender=self.__class__, user_id=user.id)
+                new_user_registered.send(sender=User, user_id=user.id)
                 return Response({'Status': True, 'Comment': f'User {user.email} is created'}, status=201)
             else:
                 return Response({'Status': False, 'Comment': 'Error', 'Errors': user_serializer.errors}, status=400)
@@ -218,8 +216,6 @@ class ContactView(APIView):
             return Response({'Status': False, 'Comment': 'Error', 'Error': 'Not authenticated'}, status=401)
 
         if {'city', 'street', 'phone'}.issubset(request.data):
-            request.data._mutable = True
-            request.data.update({'user': request.user.id})
             contact_serializer = ContactSerializer(data=request.data)
             adr_serializer = AddressSerializer(data=request.data)
             if contact_serializer.is_valid():

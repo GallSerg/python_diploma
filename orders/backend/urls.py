@@ -5,7 +5,7 @@ from .views import UserRegister, EmailConfirm, UserLogin, ContactView, UserDetai
 
 
 def trigger_error(request):
-    division_by_zero = 1 / 0
+    division_by_zero = 1 / 0  # sentry trigger
 
 
 app_name = 'backend'
@@ -18,7 +18,7 @@ urlpatterns = [
     path('user/password_reset', reset_password_request_token, name='password-reset'),
     path('user/password_reset/confirm', reset_password_confirm, name='password-reset-confirm'),
     path('user/details', UserDetails.as_view(), name='user-details'),
-    path('user/contact', ContactView.as_view(), name='contact'),
+    path('user/contact', ContactView.as_view(), name='contact-list'),
     path('categories', CategoryView.as_view(), name='categories'),
     path('shops', ShopView.as_view(), name='shops'),
     path('partner/update', PartnerUpdate.as_view(), name='partner-update'),
