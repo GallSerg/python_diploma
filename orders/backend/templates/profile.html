@@ -1,0 +1,29 @@
+<!-- backend/templates/profile.html -->
+
+{% block content %}
+{% load static %}
+
+
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Profile</title>
+</head>
+<body>
+    <h1>User Profile</h1>
+    <div>
+        <h2>Welcome,</h2>
+        <h3>Name: {{ user.first_name }} {{ user.last_name }}</h3>
+        <p>Email: {{ user.email }}</p>
+        <p>User_id: {{ user.id }}</p>
+        <p>{{ user_profile.avatar.url }}</p>
+        <p>Avatar:</p>
+        <img src="{{ avatar.thumbnail.150x150 }}" alt="{{ user.username }}'s Avatar">
+    </div>
+</body>
+</html>
+
+{% endblock %}
+

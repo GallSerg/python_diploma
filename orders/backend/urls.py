@@ -1,7 +1,8 @@
 from django.urls import path
 from django_rest_passwordreset.views import reset_password_request_token, reset_password_confirm
 from .views import UserRegister, EmailConfirm, UserLogin, ContactView, UserDetails, CategoryView, ShopView, \
-    PartnerUpdate, PartnerState, PartnerOrders, BasketView, OrderView, ProductInfoView, custom_login_view
+    PartnerUpdate, PartnerState, PartnerOrders, BasketView, OrderView, ProductInfoView, custom_login_view, \
+    profile_view
 
 
 def trigger_error(request):
@@ -13,6 +14,7 @@ app_name = 'backend'
 urlpatterns = [
     path('sentry-debug/', trigger_error),
     path('user/register', UserRegister.as_view(), name='user-register'),
+    path('user/profile', profile_view, name='user-profile'),
     path('user/register/confirm', EmailConfirm.as_view(), name='email-confirm'),
     path('user/login', UserLogin.as_view(), name='user-login'),
     path('user/password_reset', reset_password_request_token, name='password-reset'),

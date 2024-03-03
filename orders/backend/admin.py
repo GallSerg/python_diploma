@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import User, Order, Contact, Category, Shop
+from .models import User, Order, Contact, Category, Shop, UserProfile
 
 
 @admin.register(User)
@@ -24,4 +24,9 @@ class ContactAdmin(admin.ModelAdmin):
 
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
+    pass
+
+
+@admin.register(UserProfile)
+class UserProfileAdmin(admin.ModelAdmin):
     pass

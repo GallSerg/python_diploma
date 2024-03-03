@@ -1,9 +1,11 @@
+import os
 import secrets
-
 from django.contrib.auth.base_user import BaseUserManager
 from django.contrib.auth.models import AbstractUser
 from django.contrib.auth.validators import UnicodeUsernameValidator
 from django.db import models
+from versatileimagefield.fields import VersatileImageField
+from versatileimagefield.placeholder import OnDiscPlaceholderImage
 
 
 ORDER_STATE = (
@@ -72,6 +74,15 @@ class User(AbstractUser):
 
     class Meta:
         ordering = ('first_name', 'last_name', )
+
+
+class UserProfile(models.Model):
+    objects = models.manager.Manager()
+    user = models.ForeignKey(User, related_name='user', on_delete=models.CASCADE)
+    avatar = VersatileImageField(upload_to='images/', blank=True, null=True)
+
+    class Meta:
+        verbose_name = 'Profile'
 
 
 class Shop(models.Model):

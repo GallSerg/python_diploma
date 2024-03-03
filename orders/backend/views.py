@@ -9,7 +9,7 @@ from rest_framework.request import Request
 from yaml import load as load_yaml, Loader
 from requests import get
 from .models import (User, Shop, ShopCategory, Order, OrderItem, Category, Contact, Address,
-                     ConfirmToken, Product, ProductInfo, ProductParameter, Parameter)
+                     ConfirmToken, Product, ProductInfo, ProductParameter, Parameter, UserProfile)
 from .serializers import (UserSerializer, ShopSerializer, OrderSerializer, OrderItemSerializer, CategorySerializer,
                           ContactSerializer, ProductSerializer, ProductInfoSerializer, ProductParameterSerializer,
                           ParameterSerializer, AddressSerializer, ConfirmTokenSerializer, UserLoginSerializer)
@@ -17,11 +17,31 @@ from .signals import new_user_registered, new_order, social_auth_user
 from django.contrib.auth import authenticate
 from rest_framework.authtoken.models import Token
 from django.shortcuts import render
-from social_django.utils import psa
 
 
 def custom_login_view(request):
+    """
+    Function to register through Google OAuth2.
+    Args:
+        request: The HTTP request object.
+    Returns:
+        A rendered HTTP response for the register through Google OAuth2.
+    """
     return render(request, 'social/login.html')
+
+
+def profile_view(request):
+    """
+    This function gets the user and returns a rendered profile.html page with the user's profile information.
+    """
+    if not request.user.is_authenticated:
+        return Response({'Status': False, 'Comment': 'Error', 'Error': 'Not authenticated'}, status=401)
+    user_profile = UserProfile.objects.get_or_create(user=request.user)
+    return render(request, 'profile.html', {
+        'user_profile': user_profile,
+        'user': user_profile[0].user,
+        'avatar': user_profile[0].avatar
+    })
 
 
 class UserRegister(APIView):
@@ -35,7 +55,7 @@ class UserRegister(APIView):
             400: {'example': {'Status': False, 'Comment': 'Error', 'Error': 'Bad request'}},
         }
     )
-    def post(self, request, backend=None, *args, **kwargs):
+    def post(self, request, *args, **kwargs):
         """
         Process a POST request and create a new user.
 

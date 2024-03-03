@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from .models import (User, Shop, ShopCategory, Order, OrderItem, Category, Contact,
-                     ConfirmToken, Address, Product, ProductInfo, ProductParameter, Parameter)
+                     ConfirmToken, Address, Product, ProductInfo, ProductParameter, Parameter, UserProfile)
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -104,3 +104,11 @@ class ContactSerializer(serializers.ModelSerializer):
         model = Contact
         fields = ('id', 'user', 'phone', 'address')
         read_only_fields = ('address',)
+
+
+class ProfileSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = UserProfile
+        fields = ('id', 'avatar', 'user.id', 'user.first_name', 'user.last_name',
+                  'user.email', 'user.company', 'user.position', 'user.type')
