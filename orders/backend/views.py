@@ -13,7 +13,7 @@ from .models import (User, Shop, ShopCategory, Order, OrderItem, Category, Conta
 from .serializers import (UserSerializer, ShopSerializer, OrderSerializer, OrderItemSerializer, CategorySerializer,
                           ContactSerializer, ProductSerializer, ProductInfoSerializer, ProductParameterSerializer,
                           ParameterSerializer, AddressSerializer, ConfirmTokenSerializer, UserLoginSerializer)
-from .signals import new_user_registered, new_order
+from .signals import new_user_registered, new_order, social_auth_user
 from django.contrib.auth import authenticate
 from rest_framework.authtoken.models import Token
 from django.shortcuts import render
@@ -45,10 +45,6 @@ class UserRegister(APIView):
         Returns:
             The response contains the status of the user register, comment and errors.
         """
-        if backend:
-            # Social authentication flow
-            return self.social_authenticate(request, backend)
-
         if {'first_name', 'last_name', 'email', 'password', 'company', 'position', }.issubset(request.data):
             user_serializer = UserSerializer(data=request.data)
             if user_serializer.is_valid():
@@ -61,18 +57,6 @@ class UserRegister(APIView):
                 return Response({'Status': False, 'Comment': 'Error', 'Errors': user_serializer.errors}, status=400)
 
         return Response({'Status': False, 'Comment': 'Error', 'Errors': 'Bad request'}, status=400)
-
-    def social_authenticate(self, request, backend):
-        # Use the PSA (Python Social Auth) decorator to handle the social authentication process
-        # The user object will be available in request.backend.strategy.storage.user
-        user = request.backend.strategy.storage.user
-        if user and user.is_authenticated:
-            # Social user is authenticated, you can process the user as needed
-            return Response({'Status': True, 'Comment': f'User {user.email} is authenticated via {backend}'},
-                            status=200)
-        else:
-            # Social user is not authenticated, handle accordingly
-            return Response({'Status': False, 'Comment': 'Error', 'Errors': 'Social authentication failed'}, status=400)
 
 
 class EmailConfirm(APIView):
@@ -114,7 +98,6 @@ class UserLogin(APIView):
     """
     View to sign in user into the system
     """
-
     @extend_schema(
         request=UserLoginSerializer,
         responses={
