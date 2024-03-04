@@ -112,6 +112,7 @@ class Category(models.Model):
 
 
 class ShopCategory(models.Model):
+    objects = models.manager.Manager()
     shop = models.ForeignKey(Shop, related_name='shop_category', on_delete=models.CASCADE)
     category = models.ForeignKey(Category, related_name='shop_category', on_delete=models.CASCADE)
 

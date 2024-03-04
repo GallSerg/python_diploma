@@ -491,7 +491,10 @@ class PartnerState(APIView):
         if request.user.type != 'partner':
             return Response({'Status': False, 'Comment': 'Error',
                              'Error': 'Function is available only for partners'}, status=403)
-        shop = Shop.objects.filter(user_id=request.user.id)[0]
+        shop = Shop.objects.filter(user_id=request.user.id)
+        if not shop:
+            return Response({'Status': False, 'Comment': 'Error', 'Error': 'Shop not found'}, status=404)
+        shop = shop[0]
         st = 'on' if shop.state else 'off'
         return Response({'Name': shop.name, 'State': st}, status=200)
 
@@ -686,7 +689,11 @@ class BasketView(APIView):
             objects_created = 0
             for order_item in items_dict:
                 order_item.update({'order': basket.id})
-                pi = ProductInfo.objects.filter(id=order_item["product_info"])[0]
+                pi = ProductInfo.objects.filter(id=order_item["product_info"])
+                if not pi:
+                    return Response({'Status': False, 'Comment': 'Error', 'Errors': 'Product info is not found'},
+                                    status=400)
+                pi = pi[0]
                 total_sum += pi.price * order_item["quantity"]
                 serializer = OrderItemSerializer(data=order_item)
                 if serializer.is_valid():
