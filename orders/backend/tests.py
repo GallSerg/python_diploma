@@ -1,10 +1,13 @@
 import os
+import unittest
+from unittest.mock import Mock
+
 from dotenv import load_dotenv
-from django.test import TestCase
+from django.test import TestCase, RequestFactory
 from rest_framework.test import APIRequestFactory
 from .serializers import ContactSerializer, AddressSerializer
-from .models import User, Contact
-from .views import UserRegister
+from .models import User, Contact, Shop
+from .views import UserRegister, PartnerState
 from rest_framework.test import APITestCase
 from rest_framework.authtoken.models import Token
 
@@ -87,3 +90,45 @@ class ContactViewTests(APITestCase):
         response = self.client.post(path=self.url, headers=headers, data=data, format='json')
         print(f'Test5: Compare status {response.status_code} from response with status 401')
         self.assertEqual(response.status_code, 401)
+
+
+class TestPartnerState(unittest.TestCase):
+    user = User.objects.create(email='test@example.com', first_name='Test', last_name='User', type='partner')
+    token = Token.objects.create(user=user)
+
+    def setUp(self):
+        self.factory = RequestFactory()
+
+    def test_authenticated_user(self):
+        request = self.factory.get('/')
+        request.user = self.user
+        request.META['HTTP_AUTHORIZATION'] = f'Token {self.token.key}'
+        response = PartnerState.as_view()(request)
+        self.assertEqual(response.status_code, 200)
+
+    def test_non_partner_user(self):
+        self.user.type = 'customer'
+        self.user.save()
+        request = self.factory.get('/')
+        request.user = self.user
+        request.META['HTTP_AUTHORIZATION'] = f'Token {self.token.key}'
+        response = PartnerState.as_view()(request)
+        self.assertEqual(response.status_code, 403)
+
+    def test_shop_state_on(self):
+        request = self.factory.get('/')
+        request.user = self.user
+        request.META['HTTP_AUTHORIZATION'] = f'Token {self.token.key}'
+        shop = Shop.objects.create(user=self.user, name='Test Shop', state=True)
+        response = PartnerState.as_view()(request)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data, {'Name': 'Test Shop', 'State': 'on'})
+
+    def test_shop_state_off(self):
+        request = self.factory.get('/')
+        request.user = self.user
+        request.META['HTTP_AUTHORIZATION'] = f'Token {self.token.key}'
+        shop = Shop.objects.create(user=self.user, name='Test Shop', state=False)
+        response = PartnerState.as_view()(request)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data, {'Name': 'Test Shop', 'State': 'off'})
