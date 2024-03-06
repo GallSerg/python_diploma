@@ -48,3 +48,7 @@ jsonschema~=4.21.1
 PyJWT~=2.8.0
 uritemplate~=4.1.1
 inflection~=0.5.1
+autopep8==2.0.4
+django-silk==5.1.0
+gprof2dot==2022.7.29
+pycodestyle==2.11.1
